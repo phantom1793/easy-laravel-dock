@@ -1,0 +1,37 @@
+version: "3.3"
+services:
+  #nginx
+  web:
+    image: nginx:1.15.8-alpine #イメージを選択
+    ports:
+      - "8008:80" #ポートフォワーディング
+    volumes: #ファイルのマウント
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf #nginxの設定ファイル
+      - ./nginx/log:/var/log/nginx #ログファイル
+      - ./data:/var/www/data #ウェブアプリのソースコード
+    depends_on: #appを利用
+      - app
+  #php-fpm
+  app:
+    image: php:7.1.9-fpm-alpine
+    env_file: #mysqlにアクセスするための環境変数
+      - .env
+    volumes:
+      - ./data:/var/www/data
+    environment:
+      DATABASE_HOST: database #phpからmysqlにアクセスするためのホスト情報を追加
+      APP_ENV: LOCAL
+    depends_on: #databaseを利用
+      - database
+  #mysql
+  database:
+    image: mysql:5.7.19
+    ports:
+      - "9009:3306"
+    env_file: #mysqlにアクセスするための環境変数
+      - .env
+    volumes:  #コンテナを再度立ち上げるとデータがリセットされるので、データをマウント
+      - db-data:/var/lib/mysql
+
+volumes:
+  db-data: #データをDockerシステム配下に置いて直接触れないように隠蔽
